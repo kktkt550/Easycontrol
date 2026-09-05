@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/background_card_clickable"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:paddingStart="@dimen/cardPaddingH"
+    android:paddingTop="@dimen/cardPaddingV"
+    android:paddingEnd="@dimen/cardPaddingH"
+    android:paddingBottom="@dimen/cardPaddingV">
+
+    <FrameLayout
+        android:id="@+id/device_icon_background"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="@drawable/background_round_small"
+        android:backgroundTint="@color/color1"
+        android:padding="11dp">
+
+        <ImageView
+            android:id="@+id/device_icon"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:src="@drawable/wifi"
+            app:tint="@color/onColor1" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/spaceMd"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/device_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="设备1"
+            android:textColor="@color/onCardBackground"
+            android:textSize="@dimen/middleFont"
+            android:textStyle="bold"
+            tools:ignore="HardcodedText" />
+
+        <TextView
+            android:id="@+id/device_type"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="无线连接"
+            android:textColor="@color/onCardBackgroundSecond"
+            android:textSize="@dimen/smallSmallFont"
+            tools:ignore="HardcodedText" />
+    </LinearLayout>
+
+</LinearLayout>

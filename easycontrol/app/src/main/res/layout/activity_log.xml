@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/spaceSm"
+        android:paddingTop="@dimen/spaceSm"
+        android:paddingEnd="@dimen/spaceLg"
+        android:paddingBottom="@dimen/spaceSm">
+
+        <ImageView
+            android:id="@+id/back_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/background_button_secondary"
+            android:contentDescription="@string/log_title"
+            android:padding="12dp"
+            android:src="@drawable/chevron_left"
+            app:tint="@color/onSecondaryContainer" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/spaceSm"
+            android:layout_weight="1"
+            android:includeFontPadding="false"
+            android:text="@string/log_title"
+            android:textColor="@color/onBackground"
+            android:textSize="@dimen/largeFont"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/copy_button"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:background="@drawable/background_button_secondary"
+            android:gravity="center"
+            android:paddingStart="@dimen/spaceMd"
+            android:paddingEnd="@dimen/spaceMd"
+            android:text="@string/log_copy"
+            android:textColor="@color/onSecondaryContainer"
+            android:textSize="@dimen/middleFont" />
+
+        <TextView
+            android:id="@+id/clear_button"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:layout_marginStart="@dimen/spaceSm"
+            android:background="@drawable/background_button_secondary"
+            android:gravity="center"
+            android:paddingStart="@dimen/spaceMd"
+            android:paddingEnd="@dimen/spaceMd"
+            android:text="@string/log_clear"
+            android:textColor="@color/onSecondaryContainer"
+            android:textSize="@dimen/middleFont" />
+    </LinearLayout>
+
+    <ScrollView
+        android:id="@+id/log_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingStart="@dimen/spaceLg"
+        android:paddingEnd="@dimen/spaceLg"
+        android:paddingBottom="60dp"
+        android:scrollbars="none">
+
+        <TextView
+            android:id="@+id/log_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:textColor="@color/onBackground"
+            android:textIsSelectable="true"
+            android:textSize="12sp" />
+    </ScrollView>
+</LinearLayout>

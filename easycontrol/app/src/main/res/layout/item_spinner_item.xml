@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?><!-- Spinner下拉项：统一字号与配色 -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/cardBackground"
+    android:includeFontPadding="false"
+    android:paddingStart="@dimen/spaceMd"
+    android:paddingTop="@dimen/spaceMd"
+    android:paddingEnd="@dimen/spaceMd"
+    android:paddingBottom="@dimen/spaceMd"
+    android:text="测试"
+    android:textColor="@color/onCardBackground"
+    android:textSize="@dimen/smallFont"
+    tools:ignore="HardcodedText" />

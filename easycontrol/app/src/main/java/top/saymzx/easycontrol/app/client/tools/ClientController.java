@@ -158,7 +158,7 @@ public class ClientController implements TextureView.SurfaceTextureListener {
                     updateSite(byteBuffer);
                     break;
                 default:
-                    if (byteBuffer == null) break;
+                    break;
                 case "writeByteBuffer":
                     if (byteBuffer == null) break;
                     clientStream.writeToMain(byteBuffer);
@@ -353,26 +353,26 @@ public class ClientController implements TextureView.SurfaceTextureListener {
 
     // 重新计算TextureView大小
     private void reCalculateTextureViewSize() {
-        if (maxSize == null || videoSize == null) return;
-        Pair<Integer, Integer> maxSize = this.maxSize;
+        if (this.maxSize == null || videoSize == null) return;
+        Pair<Integer, Integer> calcMaxSize = this.maxSize;
         if (smallView != null && smallView.isShow()) {
             if (videoSize.first < videoSize.second)
-                maxSize = new Pair<>(this.maxSize.first, this.maxSize.first);
-            else maxSize = new Pair<>(this.maxSize.second, this.maxSize.second);
+                calcMaxSize = new Pair<>(this.maxSize.first, this.maxSize.first);
+            else calcMaxSize = new Pair<>(this.maxSize.second, this.maxSize.second);
         }
-        // 根据原画面大小videoSize计算在maxSize空间内的最大缩放大小
-        int tmp1 = videoSize.second * maxSize.first / videoSize.first;
+        // 根据原画面大小videoSize计算在calcMaxSize空间内的最大缩放大小
+        int tmp1 = videoSize.second * calcMaxSize.first / videoSize.first;
         // 横向最大不会超出
-        if (maxSize.second > tmp1) surfaceSize = new Pair<>(maxSize.first, tmp1);
+        if (calcMaxSize.second > tmp1) surfaceSize = new Pair<>(calcMaxSize.first, tmp1);
             // 竖向最大不会超出
         else
-            surfaceSize = new Pair<>(videoSize.first * maxSize.second / videoSize.second, maxSize.second);
+            surfaceSize = new Pair<>(videoSize.first * calcMaxSize.second / videoSize.second, calcMaxSize.second);
         // 全屏拉伸填充：全屏模式下画面与屏幕比例接近时拉伸填满
         if (fullView != null && AppData.setting.getFillFull()) {
             float videoRatio = (float) videoSize.first / videoSize.second;
-            float screenRatio = (float) maxSize.first / maxSize.second;
+            float screenRatio = (float) calcMaxSize.first / calcMaxSize.second;
             if (Math.abs(videoRatio - screenRatio) < 0.15f) {
-                surfaceSize = new Pair<>(maxSize.first, maxSize.second);
+                surfaceSize = new Pair<>(calcMaxSize.first, calcMaxSize.second);
             }
         }
         // 更新大小

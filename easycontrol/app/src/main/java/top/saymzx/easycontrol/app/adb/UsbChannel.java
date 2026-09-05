@@ -115,7 +115,7 @@ public class UsbChannel implements AdbChannel {
         request.setClientData(data);
         // 加入异步请求
         if (!request.queue(data, len)) throw new IOException("fail to queue read UsbRequest");
-        // 等待请求回应
+        // 等待请求回应；成功时下方才将 request 归还到池中
         while (true) {
             UsbRequest wait = usbConnection.requestWait();
             if (wait == null) throw new IOException("Connection.requestWait return null");

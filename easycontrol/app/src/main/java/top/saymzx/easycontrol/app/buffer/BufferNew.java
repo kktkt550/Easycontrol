@@ -7,9 +7,13 @@ import java.util.concurrent.LinkedBlockingDeque;
 public class BufferNew {
     private volatile boolean isClosed = false;
     private final LinkedBlockingDeque<ByteBuffer> dataQueue = new LinkedBlockingDeque<>();
+    // 维护运行总字节数，避免 getSize / readByteArrayBeforeClose 每次 O(n) 遍历队列
+    private final java.util.concurrent.atomic.AtomicInteger totalSize = new java.util.concurrent.atomic.AtomicInteger(0);
 
     public void write(ByteBuffer data) {
+        int remaining = data.remaining();
         dataQueue.offerLast(data);
+        totalSize.addAndGet(remaining);
     }
 
     public synchronized ByteBuffer read(int len) throws InterruptedException, IOException {
@@ -23,10 +27,12 @@ public class BufferNew {
             if (remaining <= bytesToRead) {
                 data.put(tmpData);
                 bytesToRead -= remaining;
+                totalSize.addAndGet(-remaining);
             } else {
                 int oldLimit = tmpData.limit();
                 tmpData.limit(tmpData.position() + bytesToRead);
                 data.put(tmpData);
+                totalSize.addAndGet(-(oldLimit - tmpData.position()));
                 tmpData.limit(oldLimit);
                 dataQueue.offerFirst(tmpData);
                 bytesToRead = 0;
@@ -40,11 +46,13 @@ public class BufferNew {
         if (isClosed) throw new IOException("BufferNew error");
         ByteBuffer byteBuffer = dataQueue.takeFirst();
         if (isClosed) throw new IOException("BufferNew error");
+        totalSize.addAndGet(-byteBuffer.remaining());
         return byteBuffer;
     }
 
     public ByteBuffer readByteArrayBeforeClose() {
-        ByteBuffer byteBuffer = ByteBuffer.allocate(Math.max(getSize(), 1));
+        int size = Math.max(totalSize.get(), 1);
+        ByteBuffer byteBuffer = ByteBuffer.allocate(size);
         for (ByteBuffer tmpBuffer : dataQueue) byteBuffer.put(tmpBuffer);
         return byteBuffer;
     }
@@ -54,15 +62,14 @@ public class BufferNew {
     }
 
     public int getSize() {
-        int size = 0;
-        for (ByteBuffer byteBuffer : dataQueue) size += byteBuffer.remaining();
-        return size;
+        return totalSize.get();
     }
 
     public void close() {
         if (isClosed) return;
         isClosed = true;
         dataQueue.offer(ByteBuffer.allocate(1));
+        totalSize.incrementAndGet();
     }
 
 }

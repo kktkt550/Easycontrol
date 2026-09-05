@@ -67,7 +67,7 @@ public class DeviceListAdapter extends BaseAdapter {
         Device device = AdbTools.devicesList.get(i);
         ItemDevicesItemBinding devicesItemBinding = (ItemDevicesItemBinding) view.getTag();
         // 设置卡片值
-        int colorInt = random.nextInt(8);
+        int colorInt = random.nextInt(9);
         devicesItemBinding.deviceIconBackground.setBackgroundTintList(ColorStateList.valueOf(context.getResources().getColor(colors[colorInt])));
         devicesItemBinding.deviceIcon.setImageTintList(ColorStateList.valueOf(context.getResources().getColor(onColors[colorInt])));
         devicesItemBinding.deviceIcon.setImageResource(device.isNetworkDevice() ? R.drawable.wifi : R.drawable.link);

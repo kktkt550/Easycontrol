@@ -417,13 +417,13 @@ public class ClientController implements TextureView.SurfaceTextureListener {
     }
 
     private final int[] pointerList = new int[20];
-    private final long[] pointerDownTime = new long[10];
+    private final long[] pointerDownTime = new long[20];
 
     private void createTouchPacket(MotionEvent event, int action, int i) {
         // 防止数组越界（actionIndex 或 pointerId 超出数组范围）
         if (i < 0 || i >= pointerDownTime.length) return;
         int p = event.getPointerId(i);
-        if (p < 0 || p >= pointerDownTime.length) return;
+        if (p < 0 || p >= pointerList.length) return;
         int offsetTime = (int) (event.getEventTime() - pointerDownTime[i]);
         int x = (int) event.getX(i);
         int y = (int) event.getY(i);

@@ -27,7 +27,7 @@ public class AudioDecode {
     private final MediaCodec.Callback callback = new MediaCodec.Callback() {
         @Override
         public void onInputBufferAvailable(@NonNull MediaCodec mediaCodec, int inIndex) {
-            intputBufferQueue.offer(inIndex);
+            inputBufferQueue.offer(inIndex);
         }
 
         @Override
@@ -56,8 +56,7 @@ public class AudioDecode {
         try {
             // 创建AudioTrack
             setAudioTrack();
-            // 创建音频放大器
-            setLoudnessEnhancer();
+            // 音频放大器按需启用，不在构造时强制开启，避免默认+30dB导致削波
         } catch (Exception e) {
             // 后续步骤失败时释放已创建的 MediaCodec，避免系统资源泄漏
             try {
@@ -74,16 +73,16 @@ public class AudioDecode {
             decodec.release();
             audioTrack.stop();
             audioTrack.release();
-            loudnessEnhancer.release();
+            if (loudnessEnhancer != null) loudnessEnhancer.release();
         } catch (Exception ignored) {
         }
     }
 
-    private final LinkedBlockingQueue<Integer> intputBufferQueue = new LinkedBlockingQueue<>();
+    private final LinkedBlockingQueue<Integer> inputBufferQueue = new LinkedBlockingQueue<>();
 
     public void decodeIn(ByteBuffer data) throws InterruptedException {
         try {
-            int inIndex = intputBufferQueue.take();
+            int inIndex = inputBufferQueue.take();
             decodec.getInputBuffer(inIndex).put(data);
             decodec.queueInputBuffer(inIndex, 0, data.capacity(), 0, 0);
         } catch (IllegalStateException ignored) {
@@ -149,10 +148,14 @@ public class AudioDecode {
         audioTrack.play();
     }
 
-    // 创建音频放大器
-    private void setLoudnessEnhancer() {
-        loudnessEnhancer = new LoudnessEnhancer(audioTrack.getAudioSessionId());
-        loudnessEnhancer.setTargetGain(3000);
-        loudnessEnhancer.setEnabled(true);
+    // 创建音频放大器（可选，调用方按需启用）
+    public void enableLoudnessEnhancer() {
+        if (loudnessEnhancer != null) return;
+        try {
+            loudnessEnhancer = new LoudnessEnhancer(audioTrack.getAudioSessionId());
+            loudnessEnhancer.setTargetGain(3000);
+            loudnessEnhancer.setEnabled(true);
+        } catch (Exception ignored) {
+        }
     }
 }

@@ -15,6 +15,7 @@ import android.os.Process;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import top.saymzx.easycontrol.app.R;
 import top.saymzx.easycontrol.app.adb.UsbChannel;
@@ -33,7 +34,7 @@ public class MyBroadcastReceiver extends BroadcastReceiver {
 
     private DeviceListAdapter deviceListAdapter;
     // 需要自动连接的默认USB设备序列号集合
-    private final java.util.Set<String> needStartDefaultUSB = new java.util.concurrent.ConcurrentHashMap<String, Boolean>().keySet(Boolean.TRUE);
+    private final java.util.Set<String> needStartDefaultUSB = ConcurrentHashMap.newKeySet();
 
     // 注册广播
     @SuppressLint("UnspecifiedRegisterReceiverFlag")

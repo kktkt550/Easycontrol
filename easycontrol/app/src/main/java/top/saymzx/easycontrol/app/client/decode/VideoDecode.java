@@ -20,7 +20,7 @@ public class VideoDecode {
     private final MediaCodec.Callback callback = new MediaCodec.Callback() {
         @Override
         public void onInputBufferAvailable(@NonNull MediaCodec mediaCodec, int inIndex) {
-            intputBufferQueue.offer(inIndex);
+            inputBufferQueue.offer(inIndex);
         }
 
         @Override
@@ -55,12 +55,12 @@ public class VideoDecode {
         }
     }
 
-    private final LinkedBlockingQueue<Integer> intputBufferQueue = new LinkedBlockingQueue<>();
+    private final LinkedBlockingQueue<Integer> inputBufferQueue = new LinkedBlockingQueue<>();
 
     public void decodeIn(ByteBuffer data) throws InterruptedException {
         try {
             long pts = data.getLong();
-            int inIndex = intputBufferQueue.take();
+            int inIndex = inputBufferQueue.take();
             decodec.getInputBuffer(inIndex).put(data);
             decodec.queueInputBuffer(inIndex, 0, data.capacity() - 8, pts, 0);
         } catch (IllegalStateException ignored) {

@@ -15,6 +15,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
+import android.view.ViewParent;
 import android.view.WindowManager;
 import android.widget.SeekBar;
 
@@ -91,7 +92,7 @@ public class SmallView extends ViewOutlineProvider {
         // 显示
         AppData.windowManager.addView(smallView.getRoot(), smallViewParams);
         // 快速切换视图时 textureView 可能仍挂在旧父容器上，先解除再添加，避免 "The specified child already has a parent" 崩溃
-        View oldParent = clientController.getTextureView().getParent();
+        ViewParent oldParent = clientController.getTextureView().getParent();
         if (oldParent instanceof ViewGroup) ((ViewGroup) oldParent).removeView(clientController.getTextureView());
         smallView.textureViewLayout.addView(clientController.getTextureView(), 0);
         // 同步鼠标状态(小窗重开时恢复图标与光标覆盖层)

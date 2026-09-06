@@ -16,6 +16,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.concurrent.Semaphore;
 
 import top.saymzx.easycontrol.server.entity.Device;
 import top.saymzx.easycontrol.server.entity.Options;
@@ -39,6 +40,9 @@ public final class Server {
     public static DataInputStream mainInputStream;
 
     private static final Object object = new Object();
+
+    // 截图并发限制：最多同时 1 个截图任务，防止快速连续请求积累过多子进程
+    private static final Semaphore screenshotSemaphore = new Semaphore(1);
 
     private static final int timeoutDelay = 1000 * 20;
 
@@ -222,25 +226,32 @@ public final class Server {
                     case 12:
                         // 截图请求：独立线程执行截图，避免阻塞控制流；成功回传 [5][size][PNG]，失败回传 [5][0]
                         // 首选截 shadow display(与投屏画面一致，息屏/折叠不黑)，失败再回退 screencap
+                        // 最多允许 1 个并发截图，防止快速连续截图积累大量线程/进程
                         new Thread(() -> {
                             try {
-                                byte[] png = SurfaceControl.captureDisplayPng(VideoEncode.getCaptureDisplay(), Device.videoSize.first, Device.videoSize.second);
-                                // 多屏折叠设备上 screencap 默认会选到息屏的那块(黑图)，用默认显示的物理ID指定 -d
-                                long captureId = SurfaceControl.getDefaultDisplayPhysicalId();
-                                if (png == null && captureId >= 0) {
+                                screenshotSemaphore.acquire();
+                                try {
+                                    byte[] png = SurfaceControl.captureDisplayPng(VideoEncode.getCaptureDisplay(), Device.videoSize.first, Device.videoSize.second);
+                                    // 多屏折叠设备上 screencap 默认会选到息屏的那块(黑图)，用默认显示的物理ID指定 -d
+                                    long captureId = SurfaceControl.getDefaultDisplayPhysicalId();
+                                    if (png == null && captureId >= 0) {
+                                        try {
+                                            png = Device.execReadOutputBytes("screencap -d " + captureId + " -p");
+                                        } catch (Exception ignored) {
+                                            // -d 物理ID无效等场景下 execReadOutputBytes 会抛异常，须继续回退到不带 -d 的 screencap
+                                        }
+                                    }
+                                    if (png == null) png = Device.execReadOutputBytes("screencap -p");
+                                    ControlPacket.sendScreenshotEvent(png);
+                                } catch (Exception ignored) {
                                     try {
-                                        png = Device.execReadOutputBytes("screencap -d " + captureId + " -p");
-                                    } catch (Exception ignored) {
-                                        // -d 物理ID无效等场景下 execReadOutputBytes 会抛异常，须继续回退到不带 -d 的 screencap
+                                        ControlPacket.sendScreenshotEvent(new byte[0]);
+                                    } catch (Exception ignored2) {
                                     }
                                 }
-                                if (png == null) png = Device.execReadOutputBytes("screencap -p");
-                                ControlPacket.sendScreenshotEvent(png);
-                            } catch (Exception ignored) {
-                                try {
-                                    ControlPacket.sendScreenshotEvent(new byte[0]);
-                                } catch (Exception ignored2) {
-                                }
+                            } catch (InterruptedException ignored) {
+                            } finally {
+                                screenshotSemaphore.release();
                             }
                         }).start();
                         break;
@@ -286,6 +297,7 @@ public final class Server {
                         break;
                     case 2:
                         Device.fallbackResolution();
+                        // fall-through: 恢复分辨率后立即退出进程
                     case 3:
                         Runtime.getRuntime().exit(0);
                         break;

@@ -66,7 +66,12 @@ public class MiniView {
         if (device == null || clientController == null) return;
         try {
             AppData.windowManager.removeView(miniView.getRoot());
-            if (timeoutListenerThread != null) timeoutListenerThread.interrupt();
+            if (timeoutListenerThread != null) {
+                timeoutListenerThread.interrupt();
+                // 等待线程退出，防止快速 hide/show 时多个监听线程同时运行
+                timeoutListenerThread.join(1000);
+                timeoutListenerThread = null;
+            }
         } catch (Exception ignored) {
         }
     }

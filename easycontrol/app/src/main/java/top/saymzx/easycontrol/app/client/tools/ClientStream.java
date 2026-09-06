@@ -130,6 +130,10 @@ public class ClientStream {
             InetSocketAddress inetSocketAddress = new InetSocketAddress(PublicTools.getIp(device.address), device.serverPort);
             for (int i = 0; i < reTry; i++) {
                 try {
+                    // 旧 mainSocket 可能已在上一轮失败时被置 null，此处先关闭再覆盖，避免泄漏
+                    if (mainSocket != null) {
+                        try { mainSocket.close(); } catch (Exception ignored) {}
+                    }
                     if (!mainConn) {
                         mainSocket = new Socket();
                         mainSocket.connect(inetSocketAddress, timeoutDelay / 2);
@@ -143,8 +147,12 @@ public class ClientStream {
                     connectDirect = true;
                     return;
                 } catch (Exception ignored) {
-                    if (mainSocket != null) mainSocket.close();
-                    if (videoSocket != null) videoSocket.close();
+                    if (mainSocket != null) {
+                        try { mainSocket.close(); } catch (Exception ignored2) {}
+                    }
+                    if (videoSocket != null) {
+                        try { videoSocket.close(); } catch (Exception ignored2) {}
+                    }
                     mainSocket = null;
                     videoSocket = null;
                     mainConn = false;

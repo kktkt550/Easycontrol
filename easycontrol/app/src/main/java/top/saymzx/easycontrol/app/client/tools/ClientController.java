@@ -157,8 +157,6 @@ public class ClientController implements TextureView.SurfaceTextureListener {
                 case "updateSite":
                     updateSite(byteBuffer);
                     break;
-                default:
-                    break;
                 case "writeByteBuffer":
                     if (byteBuffer == null) break;
                     clientStream.writeToMain(byteBuffer);

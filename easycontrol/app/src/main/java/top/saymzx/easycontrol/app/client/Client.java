@@ -126,10 +126,16 @@ public class Client {
             } catch (Exception ignored) {
             }
         }
-        // 关闭组件
-        if (clientPlayer != null) clientPlayer.close();
-        if (clientController != null) clientController.close();
-        if (clientStream != null) clientStream.close();
+        // 关闭组件：每个组件独立 try-catch，防止前一个抛出异常后后续资源泄漏
+        if (clientPlayer != null) {
+            try { clientPlayer.close(); } catch (Exception ignored) {}
+        }
+        if (clientController != null) {
+            try { clientController.close(); } catch (Exception ignored) {}
+        }
+        if (clientStream != null) {
+            try { clientStream.close(); } catch (Exception ignored) {}
+        }
         // 异常断开时自动重连（设备级开关或全局开关任一开启）
         if (byteBuffer != null) {
             String errorMsg = new String(byteBuffer.array());

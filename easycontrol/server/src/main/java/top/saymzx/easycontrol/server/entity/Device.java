@@ -381,11 +381,22 @@ public final class Device {
             try (InputStream inputStream = process.getInputStream()) {
                 while ((len = inputStream.read(buffer)) != -1) output.write(buffer, 0, len);
             }
-            int exitCode = process.waitFor();
-            if (exitCode != 0) throw new IOException("命令执行错误" + cmd);
+            // waitFor 限 5 秒，防止子进程在某些 ROM 上无限挂起阻塞截图线程
+            boolean finished = false;
+            try {
+                finished = process.waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            if (!finished) process.destroyForcibly();
+            else process.destroy();
+            if (!finished) throw new IOException("命令执行超时: " + cmd);
+            int exitCode = process.exitValue();
+            if (exitCode != 0) throw new IOException("命令执行错误: " + cmd);
             return output.toByteArray();
-        } finally {
-            process.destroy();
+        } catch (IOException e) {
+            process.destroyForcibly();
+            throw e;
         }
     }
 

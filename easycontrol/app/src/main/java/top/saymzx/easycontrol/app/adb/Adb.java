@@ -78,11 +78,17 @@ public class Adb {
         }
     }
 
+    // restartOnTcpip 超时时间（30秒）
+    private static final int RESTART_TIMEOUT_MS = 30000;
+
     public String restartOnTcpip(int port) throws InterruptedException {
         BufferStream bufferStream = open("tcpip:" + port, false);
+        long deadline = System.currentTimeMillis() + RESTART_TIMEOUT_MS;
         synchronized (this) {
             while (!bufferStream.isClosed()) {
-                wait();
+                long waitMs = deadline - System.currentTimeMillis();
+                if (waitMs <= 0) throw new InterruptedException("restartOnTcpip 等待超时");
+                wait(waitMs);
             }
         }
         return new String(bufferStream.readByteArrayBeforeClose().array());

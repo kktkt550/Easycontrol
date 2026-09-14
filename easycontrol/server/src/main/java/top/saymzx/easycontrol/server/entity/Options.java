@@ -6,10 +6,10 @@ package top.saymzx.easycontrol.server.entity;
 public final class Options {
     public static int serverPort = 25166;
     public static boolean listenerClip = true;
-    public static boolean isAudio = true;
+    public static boolean isAudio = false;
     public static int maxSize = 1600;
-    public static int maxVideoBit = 4000000;
-    public static int maxFps = 60;
+    public static int maxVideoBit = 1500000;
+    public static int maxFps = 30;
     public static boolean keepAwake = true;
     public static boolean supportH265 = true;
     public static boolean supportOpus = true;

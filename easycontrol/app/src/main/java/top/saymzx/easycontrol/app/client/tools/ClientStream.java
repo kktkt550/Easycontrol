@@ -141,6 +141,14 @@ public class ClientStream {
                     }
                     videoSocket = new Socket();
                     videoSocket.connect(inetSocketAddress, timeoutDelay / 2);
+                    // 关闭 Nagle 算法：小包立即发送，大幅降低公网延迟
+                    mainSocket.setTcpNoDelay(true);
+                    videoSocket.setTcpNoDelay(true);
+                    // 缩小 TCP 缓冲区，防止 bufferbloat
+                    mainSocket.setSendBufferSize(32768);
+                    mainSocket.setReceiveBufferSize(32768);
+                    videoSocket.setSendBufferSize(32768);
+                    videoSocket.setReceiveBufferSize(32768);
                     mainOutputStream = mainSocket.getOutputStream();
                     mainDataInputStream = new DataInputStream(mainSocket.getInputStream());
                     videoDataInputStream = new DataInputStream(videoSocket.getInputStream());

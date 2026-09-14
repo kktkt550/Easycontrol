@@ -13,10 +13,10 @@ public class Device {
     public int adbPort = 5555;
     public int serverPort = 25166;
     public boolean listenClip = true;
-    public boolean isAudio = true;
+    public boolean isAudio = false;
     public int maxSize = 1600;
-    public int maxFps = 60;
-    public int maxVideoBit = 4;
+    public int maxFps = 30;
+    public int maxVideoBit = 1;
     public boolean useH265 = true;
     public boolean connectOnStart = false;
     public boolean customResolutionOnConnect = false;

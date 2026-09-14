@@ -132,6 +132,14 @@ public final class Server {
         try (ServerSocket serverSocket = new ServerSocket(Options.serverPort)) {
             mainSocket = serverSocket.accept();
             videoSocket = serverSocket.accept();
+            // 关闭 Nagle 算法：小包立即发送，大幅降低公网延迟
+            mainSocket.setTcpNoDelay(true);
+            videoSocket.setTcpNoDelay(true);
+            // 缩小 TCP 缓冲区，防止 bufferbloat 在丢包时胀气
+            mainSocket.setSendBufferSize(32768);
+            mainSocket.setReceiveBufferSize(32768);
+            videoSocket.setSendBufferSize(32768);
+            videoSocket.setReceiveBufferSize(32768);
             mainOutputStream = mainSocket.getOutputStream();
             videoOutputStream = videoSocket.getOutputStream();
             mainInputStream = new DataInputStream(mainSocket.getInputStream());
@@ -159,6 +167,8 @@ public final class Server {
                 frame++;
                 // 每60帧（约1秒）发送一次userActivity防息屏
                 if (frame % 60 == 0) Device.keepActive();
+                // 每帧测量发送耗时，用于自适应码率调整
+                VideoEncode.recordSendDuration(VideoEncode.lastSendDuration);
                 if (frame > 120) {
                     if (System.currentTimeMillis() - lastKeepAliveTime > timeoutDelay)
                         throw new IOException("连接断开");

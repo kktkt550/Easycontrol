@@ -52,6 +52,19 @@ public final class VideoEncode {
     private static final long NO_OUTPUT_TIMEOUT_MS = 15000;
     private static long lastOutputElapsed;
 
+    // ===== 自适应码率 =====
+    // 根据实际发送耗时动态调整码率，缓解公网高延迟/低带宽场景卡顿
+    private static int currentBitrate = Options.maxVideoBit;
+    // 连续统计最近 N 帧的发送耗时，超过阈值则降码率
+    private static final int BITRATE_SAMPLE_WINDOW = 30;
+    private static int slowSendCount = 0;
+    private static int fastSendCount = 0;
+    private static long[] sendDeltas = new long[BITRATE_SAMPLE_WINDOW];
+    public static long lastSendDuration = 0;
+    private static int sendDeltaIdx = 0;
+    // 发送耗时超过此值（ms）视为拥堵
+    private static final long SLOW_SEND_THRESHOLD_MS = 35;
+
     private static void log(String msg) {
         System.out.println("[EC] " + msg);
         // 实时回传给主控端日志窗口（连接活着时也能看到诊断）
@@ -203,15 +216,19 @@ public final class VideoEncode {
         else encedec = MediaCodec.createByCodecName(codecName);
         encodecFormat = new MediaFormat();
         encodecFormat.setString(MediaFormat.KEY_MIME, codecMime);
-        encodecFormat.setInteger(MediaFormat.KEY_BIT_RATE, Options.maxVideoBit);
-        // must be present to configure the encoder, but does not impact the actual frame rate, which is variable
+        encodecFormat.setInteger(MediaFormat.KEY_BIT_RATE, currentBitrate);
         encodecFormat.setInteger(MediaFormat.KEY_FRAME_RATE, Options.maxFps);
-        encodecFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 10);
-        // display the very first frame, and recover from bad quality when no new frames
+        // 公网场景：I帧周期 5s（30fps≈150帧），比默认 10s 恢复更快，丢包后画面重建更及时
+        encodecFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 5);
+        // 静止画面保持：100ms 后重播最后一帧，减少网络空闲时无效数据
         encodecFormat.setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, 100_000);
         encodecFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
-        // 编码器参数与scrcpy对齐：不设置KEY_PRIORITY/KEY_LATENCY/KEY_INTRA_REFRESH_PERIOD/max-fps-to-encoder，
-        // 这些非必需键在部分ROM(小米8/Android15)的硬件及软件编码器上都会导致输出异常
+        // 编码质量/延迟优化（带容错，部分 ROM 不支持则忽略）
+        try { encodecFormat.setInteger(MediaFormat.KEY_LATENCY, 0); /* 0=最低延迟优先 */ } catch (Exception ignored) {}
+        // I帧均匀分布周期：每 30 帧（≈1s）请求一次 intra refresh，避免关键帧堆积在网络拥塞时刻
+        try { encodecFormat.setInteger(MediaFormat.KEY_INTRA_REFRESH_PERIOD, 30); } catch (Exception ignored) {}
+        // max-fps-to-encoder：限制实际送入编码器的帧率上限（防止编码器积压过多帧）
+        try { encodecFormat.setInteger("max-fps-to-encoder", Options.maxFps); } catch (Exception ignored) {}
     }
 
     // 编码器出错/无输出后的自愈：display路径与编码器全矩阵轮换。
@@ -392,6 +409,50 @@ public final class VideoEncode {
         return useDmsMirror ? null : display;
     }
 
+
+    // 由 Server.executeVideoOut 每帧调用，提交本帧发送耗时供自适应码率评估
+    public static void recordSendDuration(long durationMs) {
+        checkBitrateAdjustment(durationMs);
+    }
+
+    // 周期性采样实际发送耗时并调整码率；由 Server.executeVideoOut 每帧调用一次
+    public static void checkBitrateAdjustment(long sendDurationMs) {
+        // 滑动窗口记录最近 BITRATE_SAMPLE_WINDOW 帧的发送耗时
+        sendDeltas[sendDeltaIdx % BITRATE_SAMPLE_WINDOW] = sendDurationMs;
+        sendDeltaIdx++;
+        // 统计慢发送帧数
+        if (sendDurationMs > SLOW_SEND_THRESHOLD_MS) {
+            slowSendCount++;
+            fastSendCount = Math.max(0, fastSendCount - 2);
+        } else {
+            fastSendCount++;
+            slowSendCount = Math.max(0, slowSendCount - 2);
+        }
+        // 每 BITRATE_SAMPLE_WINDOW 帧评估一次
+        if (sendDeltaIdx % BITRATE_SAMPLE_WINDOW != 0) return;
+        // 过去 N 帧中慢发送比例超过 50% → 降码率
+        if (slowSendCount > BITRATE_SAMPLE_WINDOW / 2) {
+            int newBitrate = (int) (currentBitrate * 0.7);
+            if (newBitrate < 500_000) newBitrate = 500_000;
+            if (newBitrate != currentBitrate) {
+                currentBitrate = newBitrate;
+                isHasChangeConfig = true;
+                log("bitrate↓ " + (currentBitrate / 1000) + "Kbps slow=" + slowSendCount + "/" + BITRATE_SAMPLE_WINDOW);
+            }
+        } else if (fastSendCount > BITRATE_SAMPLE_WINDOW * 3 / 4) {
+            // 绝大多数帧发送很快 → 尝试提升码率
+            int newBitrate = (int) (currentBitrate * 1.15);
+            if (newBitrate > Options.maxVideoBit) newBitrate = Options.maxVideoBit;
+            if (newBitrate != currentBitrate) {
+                currentBitrate = newBitrate;
+                isHasChangeConfig = true;
+                log("bitrate↑ " + (currentBitrate / 1000) + "Kbps fast=" + fastSendCount + "/" + BITRATE_SAMPLE_WINDOW);
+            }
+        }
+        slowSendCount = 0;
+        fastSendCount = 0;
+    }
+
     private static final MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
 
     public static void encodeOut() throws IOException {
@@ -416,8 +477,11 @@ public final class VideoEncode {
         ByteBuffer buffer = encedec.getOutputBuffer(outIndex);
         if (buffer == null) return;
         lastOutputElapsed = android.os.SystemClock.elapsedRealtime();
+        long sendStart = System.currentTimeMillis();
         ControlPacket.sendVideoEvent(bufferInfo.presentationTimeUs, buffer);
+        long sendDuration = System.currentTimeMillis() - sendStart;
         encedec.releaseOutputBuffer(outIndex, false);
+        lastSendDuration = sendDuration;
     }
 
     public static void release() {

@@ -75,6 +75,6 @@ jobs:
             - server-release-unsigned.apk (server)
             - Yikong•Yuji_*.apk (app)
           draft: false
-          prerelease: true
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

@@ -1,22 +1,43 @@
-bmFtZTogQnVpbGQgRWFzeUNvbnRyb2wKCm9uOgogIHB1c2g6CiAgICBicmFu
-Y2hlczogW21haW5dCiAgd29ya2Zsb3dfZGlzcGF0Y2g6Cgpqb2JzOgogIGJ1
-aWxkOgogICAgbmFtZTogQnVpbGQgQVBLcwogICAgcnVucy1vbjogdWJ1bnR1
-LWxhdGVzdAoKICAgIHN0ZXBzOgogICAgICAtIG5hbWU6IENoZWNrb3V0IGNv
-ZGUKICAgICAgICB1c2VzOiBhY3Rpb25zL2NoZWNrb3V0QHY0CgogICAgICAt
-IG5hbWU6IFNldCB1cCBKREsgMTcKICAgICAgICB1c2VzOiBhY3Rpb25zL3Nl
-dHVwLWphdmFAdjQKICAgICAgICB3aXRoOgogICAgICAgICAgamF2YS12ZXJz
-aW9uOiAnMTcnCiAgICAgICAgICBkaXN0cmlidXRpb246ICd0ZW11cmluJwog
-ICAgICAgICAgY2FjaGU6IGdyYWRsZQoKICAgICAgLSBuYW1lOiBHcmFudCBl
-eGVjdXRlIHBlcm1pc3Npb24gZm9yIGdyYWRsZXcKICAgICAgICBydW46IGNo
-bW9kICt4IC4vZ3JhZGxldwoKICAgICAgLSBuYW1lOiBCdWlsZCBzZXJ2ZXIg
-QVBLCiAgICAgICAgcnVuOiAuL2dyYWRsZXcgOnNlcnZlcjphc3NlbWJsZURl
-YnVnCgogICAgICAtIG5hbWU6IENvcHkgc2VydmVyIEFQSyB0byBhcHAgcmF3
-IHJlc291cmNlcwogICAgICAgIHJ1bjogLi9ncmFkbGV3IDpzZXJ2ZXI6Y29w
-eURlYnVnCgogICAgICAtIG5hbWU6IEJ1aWxkIGFwcCBBUEsKICAgICAgICBy
-dW46IC4vZ3JhZGxldyA6YXBwOmFzc2VtYmxlRGVidWcKCiAgICAgIC0gbmFt
-ZTogVXBsb2FkIGRlYnVnIEFQS3MKICAgICAgICB1c2VzOiBhY3Rpb25zL3Vw
-bG9hZC1hcnRpZmFjdEB2NAogICAgICAgIHdpdGg6CiAgICAgICAgICBuYW1l
-OiBlYXN5Y29udHJvbC1kZWJ1Zy1hcGtzCiAgICAgICAgICBwYXRoOiB8CiAg
-ICAgICAgICAgIHNlcnZlci9idWlsZC9vdXRwdXRzL2Fway9kZWJ1Zy9zZXJ2
-ZXItZGVidWcuYXBrCiAgICAgICAgICAgIGFwcC9idWlsZC9vdXRwdXRzL2Fw
-ay9kZWJ1Zy8qLmFwawogICAgICAgICAgcmV0ZW50aW9uLWRheXM6IDMwCg==
+name: Build EasyControl
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build APKs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Build server APK
+        run: ./gradlew :server:assembleDebug
+
+      - name: Copy server APK to app raw resources
+        run: ./gradlew :server:copyDebug
+
+      - name: Build app APK
+        run: ./gradlew :app:assembleDebug
+
+      - name: Upload debug APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: easycontrol-debug-apks
+          path: |
+            server/build/outputs/apk/debug/server-debug.apk
+            app/build/outputs/apk/debug/*.apk
+          retention-days: 30

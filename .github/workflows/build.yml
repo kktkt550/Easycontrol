@@ -22,22 +22,25 @@ jobs:
           cache: gradle
 
       - name: Grant execute permission for gradlew
-        run: chmod +x ./gradlew
+        run: chmod +x ./easycontrol/gradlew
 
       - name: Build server APK
-        run: ./gradlew :server:assembleDebug
+        run: ./easycontrol/gradlew :server:assembleDebug
+        working-directory: ./easycontrol
 
       - name: Copy server APK to app raw resources
-        run: ./gradlew :server:copyDebug
+        run: ./easycontrol/gradlew :server:copyDebug
+        working-directory: ./easycontrol
 
       - name: Build app APK
-        run: ./gradlew :app:assembleDebug
+        run: ./easycontrol/gradlew :app:assembleDebug
+        working-directory: ./easycontrol
 
       - name: Upload debug APKs
         uses: actions/upload-artifact@v4
         with:
           name: easycontrol-debug-apks
           path: |
-            server/build/outputs/apk/debug/server-debug.apk
-            app/build/outputs/apk/debug/*.apk
+            easycontrol/server/build/outputs/apk/debug/server-debug.apk
+            easycontrol/app/build/outputs/apk/debug/*.apk
           retention-days: 30

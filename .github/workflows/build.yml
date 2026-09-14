@@ -41,3 +41,21 @@ jobs:
             easycontrol/server/build/outputs/apk/debug/server-debug.apk
             easycontrol/app/build/outputs/apk/debug/*.apk
           retention-days: 30
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/heads/main')
+        with:
+          files: |
+            easycontrol/server/build/outputs/apk/debug/server-debug.apk
+            easycontrol/app/build/outputs/apk/debug/*.apk
+          tag_name: v${{ github.run_number }}
+          name: v${{ github.run_number }}
+          body: |
+            ## Build #${{ github.run_number }}
+            
+            Auto-built from commit ${{ github.sha }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

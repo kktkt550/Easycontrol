@@ -24,14 +24,20 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./easycontrol/gradlew
 
-      - name: Build server APK
+      - name: Build server APK (debug)
         run: cd easycontrol && ./gradlew :server:assembleDebug
 
       - name: Copy server APK to app raw resources
         run: cd easycontrol && ./gradlew :server:copyDebug
 
-      - name: Build app APK
+      - name: Build app APK (debug)
         run: cd easycontrol && ./gradlew :app:assembleDebug
+
+      - name: Build server APK (release)
+        run: cd easycontrol && ./gradlew :server:assembleRelease
+
+      - name: Build app APK (release)
+        run: cd easycontrol && ./gradlew :app:assembleRelease
 
       - name: Upload debug APKs
         uses: actions/upload-artifact@v4
@@ -42,20 +48,33 @@ jobs:
             easycontrol/app/build/outputs/apk/debug/*.apk
           retention-days: 30
 
+      - name: Upload release APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: easycontrol-release-apks
+          path: |
+            easycontrol/server/build/outputs/apk/release/server-release-unsigned.apk
+            easycontrol/app/build/outputs/apk/release/*.apk
+          retention-days: 30
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/heads/main')
         with:
           files: |
-            easycontrol/server/build/outputs/apk/debug/server-debug.apk
-            easycontrol/app/build/outputs/apk/debug/*.apk
+            easycontrol/server/build/outputs/apk/release/server-release-unsigned.apk
+            easycontrol/app/build/outputs/apk/release/*.apk
           tag_name: v${{ github.run_number }}
           name: Build #${{ github.run_number }}
           body: |
             ## Build #${{ github.run_number }}
             
             Auto-built from commit ${{ github.sha }}
+            
+            ### Files
+            - server-release-unsigned.apk (server)
+            - Yikong•Yuji_*.apk (app)
           draft: false
-          prerelease: false
+          prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

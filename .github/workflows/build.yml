@@ -25,16 +25,13 @@ jobs:
         run: chmod +x ./easycontrol/gradlew
 
       - name: Build server APK
-        run: ./easycontrol/gradlew :server:assembleDebug
-        working-directory: ./easycontrol
+        run: cd easycontrol && ./gradlew :server:assembleDebug
 
       - name: Copy server APK to app raw resources
-        run: ./easycontrol/gradlew :server:copyDebug
-        working-directory: ./easycontrol
+        run: cd easycontrol && ./gradlew :server:copyDebug
 
       - name: Build app APK
-        run: ./easycontrol/gradlew :app:assembleDebug
-        working-directory: ./easycontrol
+        run: cd easycontrol && ./gradlew :app:assembleDebug
 
       - name: Upload debug APKs
         uses: actions/upload-artifact@v4
